@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Maestro de Química</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800">
+
+    <div id="app" class="max-w-2xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200">
+                    <i class="fas fa-beaker text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Quiz Maestro de Química</h2>
+                    <p id="category-label" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Cargando...</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <span id="current-number" class="text-2xl font-black text-indigo-600">1</span>
+                <span class="text-slate-400 font-bold"> / 50</span>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full h-2 bg-slate-200 rounded-full mb-8 overflow-hidden">
+            <div id="progress-bar" class="h-full bg-indigo-600 transition-all duration-500 ease-out" style="width: 0%"></div>
+        </div>
+
+        <!-- Main Card -->
+        <div id="quiz-card" class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-6 md:p-10 border border-slate-100 fade-in">
+            <h3 id="question-text" class="text-xl md:text-2xl font-bold leading-tight mb-8">
+                Cargando pregunta...
+            </h3>
+
+            <div id="options-container" class="space-y-3">
+                <!-- Las opciones se generarán aquí -->
+            </div>
+
+            <!-- Feedback Area (Hidden by default) -->
+            <div id="feedback-area" class="hidden mt-8 pt-8 border-t border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4 fade-in">
+                <div class="flex items-start gap-3 bg-slate-50 p-4 rounded-2xl flex-1">
+                    <i class="fas fa-bolt text-amber-500 mt-1"></i>
+                    <p id="feedback-text" class="text-sm text-slate-600 italic"></p>
+                </div>
+                <button id="next-btn" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div id="legend" class="mt-6 flex items-center gap-4 text-slate-400 text-[10px] font-bold uppercase tracking-widest px-2">
+            <div class="flex items-center gap-1.5"><i class="fas fa-book-open"></i> Lee bien cada opción</div>
+            <div class="flex items-center gap-1.5"><i class="fas fa-zap"></i> Sin límite de tiempo</div>
+        </div>
+    </div>
+
+    <!-- Result Screen (Hidden by default) -->
+    <div id="result-screen" class="hidden min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 fade-in text-center">
+            <div id="rank-bg" class="p-10 bg-indigo-50">
+                <i id="rank-icon" class="fas fa-award text-6xl text-indigo-600 mb-4"></i>
+                <h1 class="text-3xl font-bold mb-2">¡Completado!</h1>
+                <p class="text-slate-600">Has terminado el examen de 50 preguntas.</p>
+            </div>
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <div class="flex-1">
+                        <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Puntuación</p>
+                        <p id="final-score" class="text-4xl font-black text-slate-800">0/50</p>
+                    </div>
+                    <div class="w-px h-12 bg-slate-200"></div>
+                    <div class="flex-1">
+                        <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Rango</p>
+                        <p id="final-rank" class="text-xl font-bold text-indigo-600">Principiante</p>
+                    </div>
+                </div>
+                <button onclick="location.reload()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors shadow-lg active:scale-95">
+                    <i class="fas fa-redo"></i> Intentar de nuevo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { category: "Materia", q: "¿Qué criterio se utiliza primordialmente para clasificar una mezcla como solución, coloide o suspensión?", options: ["Su color y transparencia", "El tamaño de las partículas del soluto", "La temperatura a la que se mezclan", "El estado de agregación"], correct: 1 },
+            { category: "Materia", q: "Si una mezcla es traslúcida y sus partículas miden 10⁻⁶, se clasifica como:", options: ["Suspensión", "Mezcla Heterogénea", "Coloide", "Solución"], correct: 2 },
+            { category: "Materia", q: "Las suspensiones se diferencian de los coloides porque:", options: ["Son homogéneas", "Sus partículas sedimentan por gravedad", "No pueden ser filtradas", "Tienen fórmula química fija"], correct: 1 },
+            { category: "Materia", q: "¿Cuál es una propiedad exclusiva de las mezclas según tus notas?", options: ["Fórmula química invariable", "Sin fórmula química", "Separación solo por métodos químicos", "Son sustancias puras"], correct: 1 },
+            { category: "Materia", q: "El efecto Tyndall es característico de:", options: ["Soluciones verdaderas", "Coloides", "Gases puros", "Átomos aislados"], correct: 1 },
+            { category: "Materia", q: "Una mezcla 'Homogénea' se define visualmente porque:", options: ["Se ven sus componentes", "Presenta una sola fase", "Tiene burbujas de gas", "Se separa en capas"], correct: 1 },
+            { category: "Materia", q: "¿Qué significa que una mezcla sea 'Inseparable por filtración'?", options: ["Es una suspensión", "Partículas más pequeñas que los poros", "Es heterogénea", "Componentes sólidos"], correct: 1 },
+            { category: "Materia", q: "La sangre, según el tamaño de partícula, ¿en qué categoría entraría?", options: ["Solución", "Suspensión/Coloide", "Elemento puro", "Compuesto iónico"], correct: 1 },
+            { category: "Materia", q: "¿Por qué una solución no se puede filtrar?", options: ["Es muy densa", "Tamaño de partícula < 10⁻⁷", "No es una mezcla", "Es inestable"], correct: 1 },
+            { category: "Materia", q: "¿Es el agua destilada una mezcla?", options: ["Sí, homogénea", "No, es sustancia pura", "Sí, solución de H y O", "Depende de burbujas"], correct: 1 },
+            // Representación
+            { category: "Simbología", q: "En la ecuación A + B → C, ¿qué representa la flecha?", options: ["Equilibrio térmico", "Sentido de transformación (Irreversible)", "Reacción nula", "Suma de masas"], correct: 1 },
+            { category: "Simbología", q: "¿Qué indica el subíndice '(ac)'?", options: ["Ácido concentrado", "Acumulación energía", "Acuoso (disuelto en agua)", "Acción catalítica"], correct: 2 },
+            { category: "Simbología", q: "Flecha apuntando hacia arriba (↑) junto a un producto significa:", options: ["Sólido", "Desprendimiento de gas", "Sube temperatura", "Reacción lenta"], correct: 1 },
+            { category: "Simbología", q: "En 2Mg + O₂ → 2MgO, ¿quiénes son los reactivos?", options: ["Solo MgO", "Mg y O₂", "El número 2", "El calor"], correct: 1 },
+            { category: "Simbología", q: "¿Qué sucede con los átomos en una reacción?", options: ["Se destruyen", "Se reorganizan", "Cambian identidad", "Desaparecen"], correct: 1 },
+            { category: "Simbología", q: "¿Qué representa el símbolo Δ sobre la flecha?", options: ["Presión", "Aplicación de calor", "Catalizador", "Frío"], correct: 1 },
+            { category: "Simbología", q: "Una reacción es 'Reversible' cuando:", options: ["Productos vuelven a formar reactivos (↔)", "Explota", "Solo un sentido", "Produce sólido"], correct: 0 },
+            { category: "Simbología", q: "¿Función del coeficiente estequiométrico?", options: ["Indicar temperatura", "Indicar cantidad de moléculas", "Cambiar fórmula", "Nombrar elemento"], correct: 1 },
+            { category: "Simbología", q: "En la ecuación de neutralización ácido-base, ¿en qué estado suele estar el agua?", options: ["Sólido", "Gaseoso", "Líquido (l)", "Acuoso"], correct: 2 },
+            { category: "Simbología", q: "¿Ley que dice que masa de reactivos = masa de productos?", options: ["Gravedad", "Conservación de la Masa", "Relatividad", "Colisiones"], correct: 1 },
+            { category: "Simbología", q: "El símbolo (s) en un producto como AgCl(s) indica:", options: ["Gas soluble", "Formación de precipitado", "Sónica", "Requiere sodio"], correct: 1 },
+            { category: "Simbología", q: "¿Qué es una reacción de 'Síntesis'?", options: ["Rotura", "Combinación para formar una sola", "Intercambio", "Breve"], correct: 1 },
+            { category: "Simbología", q: "¿Cuál NO es evidencia visual de reacción?", options: ["Cambio color", "Burbujas", "Mezcla arena y agua", "Cambio temperatura"], correct: 2 },
+            { category: "Simbología", q: "En CH₄ + 2O₂ → CO₂ + 2H₂O, ¿moléculas de O₂?", options: ["1", "2", "4", "0"], correct: 1 },
+            { category: "Simbología", q: "¿Qué indica una doble flecha con distinta longitud (⇌)?", options: ["Detenida", "Equilibrio desplazado", "Imposible", "Ruptura"], correct: 1 },
+            // Dinámica
+            { category: "Cinética", q: "¿Autor de la 'Teoría de las Colisiones'?", options: ["Lavoisier", "Trautz y Lewis", "Mendeleev", "Newton"], correct: 1 },
+            { category: "Cinética", q: "Para un choque 'Efectivo', la orientación debe ser:", options: ["Aleatoria", "Adecuada", "Opuesta", "No importa"], correct: 1 },
+            { category: "Cinética", q: "¿Qué es el 'Complejo Activado'?", options: ["Producto estable", "Estado transitorio de alta energía", "Reactivo gaseoso", "Agua con azúcar"], correct: 1 },
+            { category: "Cinética", q: "Si productos están por DEBAJO de reactivos en energía:", options: ["Endotérmica", "Exotérmica", "Neutral", "Imposible"], correct: 1 },
+            { category: "Cinética", q: "La Energía de Activación (Ea) es:", options: ["Sobrante", "Barrera mínima inicial", "Ambiente", "Velocidad luz"], correct: 1 },
+            { category: "Cinética", q: "Si sube temperatura, los choques:", options: ["Disminuyen", "Aumentan en frecuencia y energía", "Son inefectivos", "Cambian dirección"], correct: 1 },
+            { category: "Cinética", q: "¿Efecto de un catalizador?", options: ["Sube Ea", "Baja Ea", "Elimina productos", "No afecta"], correct: 1 },
+            { category: "Cinética", q: "Reacción que absorbe calor:", options: ["Combustión", "Exotérmica", "Endotérmica", "Efervescente"], correct: 2 },
+            { category: "Cinética", q: "ΔH en reacción exotérmica es:", options: ["Positivo", "Negativo", "Cero", "Infinito"], correct: 1 },
+            { category: "Cinética", q: "En combustión, el 'Comburente' es:", options: ["Nitrógeno", "Oxígeno", "CO₂", "Madera"], correct: 1 },
+            { category: "Cinética", q: "¿Por qué la carne cambia de color al cocerse?", options: ["Hidratación", "Reacción inducida por calor", "Pierde átomos", "Cambio físico"], correct: 1 },
+            { category: "Cinética", q: "La 'Energía de Enlace' es:", options: ["Para romper enlace", "Peso átomo", "Velocidad electrón", "Distancia núcleos"], correct: 0 },
+            { category: "Cinética", q: "¿Orientación correcta pero SIN energía suficiente?", options: ["Lenta", "No hay reacción", "Sustancia líquida", "Fusión"], correct: 1 },
+            { category: "Cinética", q: "¿Estado con choques más frecuentes?", options: ["Sólido", "Líquido", "Gaseoso", "Plasma"], correct: 2 },
+            { category: "Cinética", q: "Gráfico endotérmico muestra:", options: ["Productos con más energía", "Productos con menos energía", "Sin curva", "Recta"], correct: 0 },
+            // Vida
+            { category: "Bioquímica", q: "Fórmula de la Glucosa:", options: ["CO₂", "C₆H₁₂O₆", "H₂O", "NaCl"], correct: 1 },
+            { category: "Bioquímica", q: "Respiración Celular es:", options: ["Endotérmica", "Exotérmica", "Isotérmica", "Precipitación"], correct: 1 },
+            { category: "Bioquímica", q: "Residuo gaseoso exhalado:", options: ["Oxígeno", "CO₂", "Metano", "Nitrógeno"], correct: 1 },
+            { category: "Bioquímica", q: "¿Donde ocurre la respiración?", options: ["Cloroplasto", "Mitocondria", "Núcleo", "Pared"], correct: 1 },
+            { category: "Bioquímica", q: "Gas indispensable para oxidar glucosa:", options: ["CO₂", "O₂", "CO", "N₂"], correct: 1 },
+            { category: "Bioquímica", q: "Fotosíntesis ocurre en:", options: ["Mitocondria", "Cloroplasto", "Ribosoma", "Vacuola"], correct: 1 },
+            { category: "Bioquímica", q: "¿Por qué son complementarios?", options: ["Producen O₂", "Productos de uno = reactivos del otro", "Ambos necesitan luz", "Mismo organelo"], correct: 1 },
+            { category: "Bioquímica", q: "Sustancia oscurecimiento fruta:", options: ["Glucosa", "Melanina", "Ácido clorhídrico", "Sal"], correct: 1 },
+            { category: "Bioquímica", q: "Gas tóxico en combustión incompleta:", options: ["CO₂", "CO", "H₂O", "O₂"], correct: 1 },
+            { category: "Bioquímica", q: "Reacción con luz y calor intensos:", options: ["Evaporación", "Combustión", "Fusión", "Disolución"], correct: 1 }
+        ];
+
+        let currentIdx = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        function updateUI() {
+            const q = questions[currentIdx];
+            document.getElementById('category-label').textContent = q.category;
+            document.getElementById('current-number').textContent = currentIdx + 1;
+            document.getElementById('question-text').textContent = q.q;
+            document.getElementById('progress-bar').style.width = `${(currentIdx / questions.length) * 100}%`;
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full p-4 md:p-5 rounded-2xl border-2 border-slate-100 text-left transition-all flex items-center justify-between font-medium group hover:border-indigo-200 hover:bg-indigo-50/30";
+                btn.innerHTML = `
+                    <span class="flex items-center gap-4">
+                        <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold group-hover:bg-indigo-100 group-hover:text-indigo-600 uppercase">
+                            ${String.fromCharCode(65 + idx)}
+                        </span>
+                        ${opt}
+                    </span>
+                `;
+                btn.onclick = () => handleAnswer(idx);
+                container.appendChild(btn);
+            });
+
+            document.getElementById('feedback-area').classList.add('hidden');
+            isAnswered = false;
+        }
+
+        function handleAnswer(selectedIdx) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const q = questions[currentIdx];
+            const buttons = document.querySelectorAll('.option-btn');
+            const feedbackArea = document.getElementById('feedback-area');
+            const feedbackText = document.getElementById('feedback-text');
+
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === q.correct) {
+                    btn.classList.replace('border-slate-100', 'border-emerald-500');
+                    btn.classList.add('bg-emerald-50', 'text-emerald-800', 'ring-2', 'ring-emerald-500/20');
+                    btn.innerHTML += '<i class="fas fa-check-circle text-emerald-600"></i>';
+                } else if (idx === selectedIdx) {
+                    btn.classList.replace('border-slate-100', 'border-rose-500');
+                    btn.classList.add('bg-rose-50', 'text-rose-800', 'ring-2', 'ring-rose-500/20');
+                    btn.innerHTML += '<i class="fas fa-times-circle text-rose-600"></i>';
+                } else {
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            if (selectedIdx === q.correct) {
+                score++;
+                feedbackText.textContent = "¡Excelente! Has aplicado bien tus conocimientos.";
+            } else {
+                feedbackText.textContent = `La respuesta correcta era la ${String.fromCharCode(65 + q.correct)}. ¡Sigue estudiando!`;
+            }
+
+            feedbackArea.classList.remove('hidden');
+        }
+
+        document.getElementById('next-btn').onclick = () => {
+            currentIdx++;
+            if (currentIdx < questions.length) {
+                updateUI();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                showFinalResults();
+            }
+        };
+
+        function showFinalResults() {
+            document.getElementById('app').classList.add('hidden');
+            const screen = document.getElementById('result-screen');
+            screen.classList.remove('hidden');
+
+            const scoreText = document.getElementById('final-score');
+            const rankText = document.getElementById('final-rank');
+            const rankIcon = document.getElementById('rank-icon');
+            const rankBg = document.getElementById('rank-bg');
+
+            scoreText.textContent = `${score}/${questions.length}`;
+            
+            const pct = (score / questions.length) * 100;
+            if (pct >= 90) {
+                rankText.textContent = "Maestro Químico";
+                rankText.className = "text-xl font-bold text-yellow-600";
+                rankIcon.className = "fas fa-crown text-6xl text-yellow-500 mb-4";
+                rankBg.className = "p-10 bg-yellow-50";
+            } else if (pct >= 70) {
+                rankText.textContent = "Analista Senior";
+                rankText.className = "text-xl font-bold text-blue-600";
+                rankIcon.className = "fas fa-flask text-6xl text-blue-500 mb-4";
+                rankBg.className = "p-10 bg-blue-50";
+            } else if (pct >= 50) {
+                rankText.textContent = "Estudiante Avanzado";
+                rankText.className = "text-xl font-bold text-green-600";
+                rankIcon.className = "fas fa-vial text-6xl text-green-500 mb-4";
+                rankBg.className = "p-10 bg-green-50";
+            } else {
+                rankText.textContent = "Principiante";
+                rankText.className = "text-xl font-bold text-slate-600";
+                rankIcon.className = "fas fa-book text-6xl text-slate-400 mb-4";
+                rankBg.className = "p-10 bg-slate-50";
+            }
+        }
+
+        // Inicializar
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
